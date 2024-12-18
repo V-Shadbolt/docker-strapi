@@ -212,7 +212,7 @@ EOT
     fi
   fi
 
-  if [ "${DATABASE_CLIENT}" -eq "postgres" ] && [ ! grep -q "\"pg\"" package.json ]; then
+  if [ "${DATABASE_CLIENT}" = "postgres" ] && ! grep -q "\"pg\"" package.json; then
     echo "Adding Postgres packages..."
     if [ -f "yarn.lock" ]; then
       yarn add "pg@^8.13.0" --prod || { echo "Adding Postgres packages failed"; exit 1; }
