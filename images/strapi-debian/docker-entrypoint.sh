@@ -3,9 +3,9 @@ set -ea
 
 if [ "$*" = "strapi" ]; then
 
-  if [ ! -f "package.json" ]; then
+  DATABASE_CLIENT=${DATABASE_CLIENT:-sqlite}
 
-    DATABASE_CLIENT=${DATABASE_CLIENT:-sqlite}
+  if [ ! -f "package.json" ]; then
 
     EXTRA_ARGS=${EXTRA_ARGS}
 
@@ -209,6 +209,15 @@ EOT
       yarn add "react@^18.0.0" "react-dom@^18.0.0" "react-router-dom@^5.3.4" "styled-components@^5.3.3" --prod || { echo "Adding React and Styled Components failed"; exit 1; }
     else
       npm install react@"^18.0.0" react-dom@"^18.0.0" react-router-dom@"^5.3.4" styled-components@"^5.3.3" --only=prod || { echo "Adding React and Styled Components failed"; exit 1; }
+    fi
+  fi
+
+  if [ "${DATABASE_CLIENT}" -eq "postgres" ] && [ ! grep -q "\"pg\"" package.json ]; then
+    echo "Adding Postgres packages..."
+    if [ -f "yarn.lock" ]; then
+      yarn add "pg@^8.13.0" --prod || { echo "Adding Postgres packages failed"; exit 1; }
+    else
+      npm install pg@"^8.13.0" --only=prod || { echo "Adding Postgres packages failed"; exit 1; }
     fi
   fi
 
