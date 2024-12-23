@@ -59,6 +59,15 @@ jobs:
             NODE=node
             GITHUB_ACTIONS=1
           tags: pr-build-check-strapi-v4:latest
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..10}; do
+            nc -z localhost 5432 && echo "PostgreSQL is ready!" && exit 0
+            echo "Waiting for PostgreSQL to start..."
+            sleep 5
+          done
+          echo "PostgreSQL did not become ready in time!" && exit 1
       
       - name: Run PR-Check v4 Image with SQLite
         timeout-minutes: 10
@@ -156,6 +165,15 @@ jobs:
             NODE=node
             GITHUB_ACTIONS=1
           tags: pr-build-check-strapi-v5:latest
+      
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..10}; do
+            nc -z localhost 5432 && echo "PostgreSQL is ready!" && exit 0
+            echo "Waiting for PostgreSQL to start..."
+            sleep 5
+          done
+          echo "PostgreSQL did not become ready in time!" && exit 1
       
       - name: Run PR-Check v5 Image with SQLite
         timeout-minutes: 10
