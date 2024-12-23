@@ -78,6 +78,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
+      - name: Create a custom Docker network
+        run: docker network create strapi-network
+
+      - name: Connect Postgres to Custom Network
+        run: docker network connect strapi-network postgres
+      
       - name: Build Latest Image and Export to Docker
         uses: docker/build-push-action@v6
         with:
@@ -99,7 +105,7 @@ jobs:
         timeout-minutes: 10
         run: |
           docker run --rm \
-            --network=host \
+            --network=strapi-network \
             -e DATABASE_CLIENT=postgres \
             -e DATABASE_HOST=postgres \
             -e DATABASE_PORT=5432 \
