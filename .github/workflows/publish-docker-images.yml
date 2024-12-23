@@ -98,7 +98,7 @@ jobs:
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..10}; do
-            nc -z localhost 5432 && echo "PostgreSQL is ready!" && exit 0
+            nc -z 172.17.0.1 5432 && echo "PostgreSQL is ready!" && exit 0
             echo "Waiting for PostgreSQL to start..."
             sleep 5
           done
@@ -109,7 +109,7 @@ jobs:
         run: |
           docker run --rm \
             -e DATABASE_CLIENT=postgres \
-            -e DATABASE_HOST=localhost \
+            -e DATABASE_HOST=172.17.0.1 \
             -e DATABASE_PORT=5432 \
             -e DATABASE_NAME=strapi \
             -e DATABASE_USERNAME=strapi \
