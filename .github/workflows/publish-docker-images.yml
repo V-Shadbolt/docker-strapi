@@ -47,6 +47,21 @@ jobs:
       OLDV4: 4.15.0
       OLDV5: 5.0.0
     
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: strapi
+          POSTGRES_PASSWORD: strapi
+          POSTGRES_DB: strapi
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
       - name: Get Current Repository
         uses: actions/checkout@v4
@@ -75,10 +90,22 @@ jobs:
             GITHUB_ACTIONS=1
           tags: ${{ secrets.DOCKER_USERNAME }}/strapi:lat
 
-      - name: Run Latest Image
+      - name: Run Latest Image with SQLite
         timeout-minutes: 10
         run: |
           docker run --rm ${{ secrets.DOCKER_USERNAME }}/strapi:lat
+
+      - name: Run Latest Image with PostgreSQL
+        timeout-minutes: 10
+        run: |
+          docker run --rm \
+            -e DATABASE_CLIENT=postgres \
+            -e DATABASE_HOST=127.0.0.1 \
+            -e DATABASE_PORT=5432 \
+            -e DATABASE_NAME=strapi \
+            -e DATABASE_USERNAME=strapi \
+            -e DATABASE_PASSWORD=strapi \
+            ${{ secrets.DOCKER_USERNAME }}/strapi:lat
       
       - name: Create Temp V4 and V5 Volumes
         run: |
