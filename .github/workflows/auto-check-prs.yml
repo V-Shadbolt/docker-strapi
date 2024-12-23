@@ -1,0 +1,201 @@
+name: PR Build Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-pr-build-v4:
+    name: Test Strapi v4 Build
+    runs-on: ubuntu-latest
+
+    env:
+      OLDV4: 4.15.0
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: strapi
+          POSTGRES_PASSWORD: strapi
+          POSTGRES_DB: strapi
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Get Current Repository
+        uses: actions/checkout@v4
+
+      - name: Read Current Strapi v4 Version
+        id: fetch-v4-version
+        run: echo "VERSION_V4=$(cat release-versions/strapi-v4-latest.txt)" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Latest v4 Image and Export to Docker
+        uses: docker/build-push-action@v6
+        with:
+          load: true
+          context: ./images/strapi-debian
+          build-args: |
+            STRAPI_VERSION=${{steps.fetch-v4-version.outputs.VERSION_V4}}
+            NODE_VERSION=18
+            NODE=node
+            GITHUB_ACTIONS=1
+          tags: pr-build-check-strapi-v4:latest
+      
+      - name: Run PR-Check v4 Image with SQLite
+        timeout-minutes: 10
+        run: |
+          docker run --rm pr-build-check-strapi-v4:latest
+  
+      - name: Run PR-Check v4 Image with PostgreSQL
+        timeout-minutes: 10
+        run: |
+          docker run --rm \
+            -e DATABASE_CLIENT=postgres \
+            -e DATABASE_HOST=localhost \
+            -e DATABASE_PORT=5432 \
+            -e DATABASE_NAME=strapi \
+            -e DATABASE_USERNAME=strapi \
+            -e DATABASE_PASSWORD=strapi \
+            pr-build-check-strapi-v4:latest
+
+      - name: Create Temp V4 Volume
+        run: |
+          mkdir ${{ runner.temp }}/strapiv4
+        
+      - name: Build Old V4 Image and Export to Docker
+        uses: docker/build-push-action@v6
+        with:
+          load: true
+          context: ./images/strapi-debian
+          build-args: |
+            STRAPI_VERSION=${{ env.OLDV4 }}
+            NODE_VERSION=18
+            NODE=node
+            GITHUB_ACTIONS=1
+          tags: pr-build-check-strapi-v4:oldv4
+
+      - name: Init Old V4 Image
+        timeout-minutes: 10
+        run: |
+          docker run --rm -v ${{ runner.temp }}/strapiv4:/srv/app pr-build-check-strapi-v4:oldv4
+        
+      - name: Test Old V4 Image Upgrade
+        timeout-minutes: 10
+        run: |
+          docker run --rm -v ${{ runner.temp }}/strapiv4:/srv/app pr-build-check-strapi-v4:latest
+
+  test-pr-build-v5:
+    name: Test Strapi v5 Build
+    runs-on: ubuntu-latest
+
+    env:
+      OLDV5: 5.0.0
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: strapi
+          POSTGRES_PASSWORD: strapi
+          POSTGRES_DB: strapi
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Get Current Repository
+        uses: actions/checkout@v4
+
+      - name: Read Current Strapi v5 Version
+        id: fetch-v5-version
+        run: echo "VERSION_V5=$(cat release-versions/strapi-v5-latest.txt)" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Latest v5 Image and Export to Docker
+        uses: docker/build-push-action@v6
+        with:
+          load: true
+          context: ./images/strapi-debian
+          build-args: |
+            STRAPI_VERSION=${{steps.fetch-v5-version.outputs.VERSION_V5}}
+            NODE_VERSION=18
+            NODE=node
+            GITHUB_ACTIONS=1
+          tags: pr-build-check-strapi-v5:latest
+      
+      - name: Run PR-Check v5 Image with SQLite
+        timeout-minutes: 10
+        run: |
+          docker run --rm pr-build-check-strapi-v5:latest
+  
+      - name: Run PR-Check v5 Image with PostgreSQL
+        timeout-minutes: 10
+        run: |
+          docker run --rm \
+            -e DATABASE_CLIENT=postgres \
+            -e DATABASE_HOST=localhost \
+            -e DATABASE_PORT=5432 \
+            -e DATABASE_NAME=strapi \
+            -e DATABASE_USERNAME=strapi \
+            -e DATABASE_PASSWORD=strapi \
+            pr-build-check-strapi-v5:latest
+
+      - name: Create Temp V5 Volume
+        run: |
+          mkdir ${{ runner.temp }}/strapiv5
+        
+      - name: Build Old V5 Image and Export to Docker
+        uses: docker/build-push-action@v6
+        with:
+          load: true
+          context: ./images/strapi-debian
+          build-args: |
+            STRAPI_VERSION=${{ env.OLDV5 }}
+            NODE_VERSION=18
+            NODE=node
+            GITHUB_ACTIONS=1
+          tags: pr-build-check-strapi-v5:oldv5
+
+      - name: Init Old V5 Image
+        timeout-minutes: 10
+        run: |
+          docker run --rm -v ${{ runner.temp }}/strapiv5:/srv/app pr-build-check-strapi-v5:oldv5
+        
+      - name: Test Old V5 Image Upgrade
+        timeout-minutes: 10
+        run: |
+          docker run --rm -v ${{ runner.temp }}/strapiv5:/srv/app pr-build-check-strapi-v5:latest
