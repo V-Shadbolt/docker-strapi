@@ -100,7 +100,7 @@ jobs:
         run: |
           docker run --rm \
             -e DATABASE_CLIENT=postgres \
-            -e DATABASE_HOST=127.0.0.1 \
+            -e DATABASE_HOST=postgres \
             -e DATABASE_PORT=5432 \
             -e DATABASE_NAME=strapi \
             -e DATABASE_USERNAME=strapi \
