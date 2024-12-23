@@ -99,7 +99,7 @@ jobs:
         timeout-minutes: 10
         run: |
           docker run --rm \
-            --network host
+            --network=host \
             -e DATABASE_CLIENT=postgres \
             -e DATABASE_HOST=postgres \
             -e DATABASE_PORT=5432 \
