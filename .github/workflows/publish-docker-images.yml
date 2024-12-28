@@ -44,9 +44,18 @@ jobs:
 
     env:
       TAG: ${{ needs.tags.outputs.tag }}
-      OLDV4: 4.15.0
-      OLDV5: 5.0.0
-    
+      POSTGRES_HOST: 172.17.0.1
+
+    strategy:
+      matrix:
+        upgrade-path:
+          - version: '4'
+            old_version: 4.15.0
+            run_upgrade: true
+          - version: '5'
+            old_version: 5.0.0
+            run_upgrade: ${{ startsWith(needs.tags.outputs.tag, '5') }}
+      
     services:
       postgres:
         image: postgres
@@ -78,7 +87,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
-      - name: Build Latest Image and Export to Docker
+      - name: Build Latest ${{ matrix.upgrade-path.version }} Image and Export to Docker
         uses: docker/build-push-action@v6
         with:
           load: true
@@ -88,84 +97,53 @@ jobs:
             NODE_VERSION=18
             NODE=node
             GITHUB_ACTIONS=1
-          tags: ${{ secrets.DOCKER_USERNAME }}/strapi:lat
+          tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
 
-      - name: Run Latest Image with SQLite
+      - name: Test Latest ${{ matrix.upgrade-path.version }} Image with SQLite
         timeout-minutes: 10
         run: |
-          docker run --rm ${{ secrets.DOCKER_USERNAME }}/strapi:lat
-      
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          for i in {1..10}; do
-            nc -z 172.17.0.1 5432 && echo "PostgreSQL is ready!" && exit 0
-            echo "Waiting for PostgreSQL to start..."
-            sleep 5
-          done
-          echo "PostgreSQL did not become ready in time!" && exit 1
+          docker run --rm ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
 
-      - name: Run Latest Image with PostgreSQL
+      - name: Test Latest ${{ matrix.upgrade-path.version }} Image with PostgreSQL
         timeout-minutes: 10
         run: |
           docker run --rm \
             -e DATABASE_CLIENT=postgres \
-            -e DATABASE_HOST=172.17.0.1 \
+            -e DATABASE_HOST=${{ env.POSTGRES_HOST }} \
             -e DATABASE_PORT=5432 \
             -e DATABASE_NAME=strapi \
             -e DATABASE_USERNAME=strapi \
             -e DATABASE_PASSWORD=strapi \
-            ${{ secrets.DOCKER_USERNAME }}/strapi:lat
+            ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
       
-      - name: Create Temp V4 and V5 Volumes
+      - name: Create Temp Volume
         run: |
-          mkdir ${{ runner.temp }}/strapiv4 ${{ runner.temp }}/strapiv5
+          mkdir ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}
       
-      - name: Build Old V4 Image and Export to Docker
+      - name: Build Old ${{ matrix.upgrade-path.version }} Image and Export to Docker
         uses: docker/build-push-action@v6
+        if: ${{ matrix.upgrade-path.run_upgrade }}
         with:
           load: true
           context: ./images/strapi-debian
           build-args: |
-            STRAPI_VERSION=${{ env.OLDV4 }}
+            STRAPI_VERSION=${{ matrix.upgrade-path.old_version }}
             NODE_VERSION=18
             NODE=node
             GITHUB_ACTIONS=1
-          tags: ${{ secrets.DOCKER_USERNAME }}/strapi:oldv4
+          tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:old
 
-      - name: Init Old V4 Image
+      - name: Init Old ${{ matrix.upgrade-path.version }} Strapi Image with SQLite
+        if: ${{ matrix.upgrade-path.run_upgrade }}
         timeout-minutes: 10
         run: |
-          docker run --rm -v ${{ runner.temp }}/strapiv4:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi:oldv4
+          docker run --rm -v ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:old
         
-      - name: Test Old V4 Image Upgrade
+      - name: Test Upgrade from ${{ matrix.upgrade-path.version }} to Latest Strapi Image with SQLite
+        if: ${{ matrix.upgrade-path.run_upgrade }}
         timeout-minutes: 10
         run: |
-          docker run --rm -v ${{ runner.temp }}/strapiv4:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi:lat
-      
-      - name: Build Old V5 Image and Export to Docker
-        uses: docker/build-push-action@v6
-        if: startsWith(env.TAG, '5')
-        with:
-          load: true
-          context: ./images/strapi-debian
-          build-args: |
-            STRAPI_VERSION=${{ env.OLDV5 }}
-            NODE_VERSION=18
-            NODE=node
-            GITHUB_ACTIONS=1
-          tags: ${{ secrets.DOCKER_USERNAME }}/strapi:oldv5
-
-      - name: Init Old V5 Image
-        if: startsWith(env.TAG, '5')
-        timeout-minutes: 10
-        run: |
-          docker run --rm -v ${{ runner.temp }}/strapiv5:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi:oldv5
-        
-      - name: Test Old V5 Image Upgrade
-        if: startsWith(env.TAG, '5')
-        timeout-minutes: 10
-        run: |
-          docker run --rm -v ${{ runner.temp }}/strapiv5:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi:lat
+          docker run --rm -v ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
 
   build-and-push:
     name: Build and Push Images
@@ -175,6 +153,15 @@ jobs:
     env:
       TAG: ${{ needs.tags.outputs.tag }}
       LATEST: ${{ needs.tags.outputs.latest }}
+
+    strategy:
+      matrix:
+        os: [debian, alpine]
+        arch:
+          - platform: linux/amd64
+            node: node
+          - platform: linux/arm64
+            node: arm64v8/node
 
     steps:
       - name: Get Current Repository
@@ -190,63 +177,21 @@ jobs:
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}       
-
-      - name: Build (default => debian)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./images/strapi-debian
-          platforms: linux/amd64
-          build-args: |
-            STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=18
-            NODE=node
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}
-
-      - name: Build (alpine)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./images/strapi-alpine
-          platforms: linux/amd64
-          build-args: |
-            STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=18
-            NODE=node
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}-alpine
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}-alpine
+          password: ${{ secrets.DOCKER_PASSWORD }}      
       
-      - name: Build (default => debian arm64)
+      - name: Build and Push ${{ matrix.os }} (${{ matrix.arch.platform }})
         uses: docker/build-push-action@v6
         with:
-          context: ./images/strapi-debian
-          platforms: linux/arm64
+          context: ./images/strapi-${{ matrix.os }}
+          platforms: ${{ matrix.arch.platform }}
           build-args: |
             STRAPI_VERSION=${{ env.TAG }}
             NODE_VERSION=18
-            NODE=arm64v8/node
+            NODE=${{ matrix.arch.node }}
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}-arm64
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}-arm64
-
-      - name: Build (alpine arm64)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./images/strapi-alpine
-          platforms: linux/arm64
-          build-args: |
-            STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=18
-            NODE=arm64v8/node
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}-alpine-arm64
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}-alpine-arm64
+            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }}
+            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }}
 
   release:
     name: Release
@@ -259,27 +204,18 @@ jobs:
     permissions:
       contents: write
 
+    strategy:
+      matrix:
+        version: [v4, v5]
+
     steps:
       - name: Get Current Repository
         uses: actions/checkout@v4
-      
-      - name: Create Latest Release in GitHub
-        id: create_v5_release
-        if: startsWith(env.TAG, '5')
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v${{ env.TAG }}
-          prerelease: false
-          draft: false
-          generate_release_notes: true
-          name: Release ${{ env.TAG }}
-          body: Strapi v${{ env.TAG }}
-          make_latest: true
-      
+
       - name: Create Release in GitHub
-        id: create_v4_release
-        if: startsWith(env.TAG, '4')
+        if: |
+          (matrix.version == 'v4' && startsWith(env.TAG, '4')) ||
+          (matrix.version == 'v5' && startsWith(env.TAG, '5'))
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -289,4 +225,4 @@ jobs:
           generate_release_notes: true
           name: Release ${{ env.TAG }}
           body: Strapi v${{ env.TAG }}
-          make_latest: false
+          make_latest: ${{ matrix.version == 'v5' }}
