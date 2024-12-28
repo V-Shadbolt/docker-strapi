@@ -131,6 +131,12 @@ The Docker entrypoint has been modified to skip the Strapi Cloud setup for new S
 
 ---
 
+### Cannot find module 'pg'
+
+The Docker entrypoint has been modified to add the missing pg modules if the Strapi database is configured to use Postgres starting in `v5.6.0` and `v4.25.16`
+
+---
+
 # Official Documentation
 
 - The official documentation of Strapi is available on [https://docs.strapi.io/](https://docs.strapi.io/).
