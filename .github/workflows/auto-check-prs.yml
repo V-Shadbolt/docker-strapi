@@ -52,7 +52,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Latest ${{ matrix.version }} Image and Export to Docker
+      - name: Build Latest ${{ matrix.version }} Strapi Image and Export to Docker
         uses: docker/build-push-action@v6
         with:
           load: true
@@ -64,12 +64,12 @@ jobs:
             GITHUB_ACTIONS=1
           tags: pr-build-check-strapi-${{ matrix.version }}:latest
       
-      - name: Test Latest ${{ matrix.version }} Image with SQLite
+      - name: Test Latest ${{ matrix.version }} Strapi Image with SQLite
         timeout-minutes: 10
         run: |
           docker run --rm pr-build-check-strapi-${{ matrix.version }}:latest
       
-      - name: Test Latest ${{ matrix.version }} Image with PostgreSQL
+      - name: Test Latest ${{ matrix.version }} Strapi Image with PostgreSQL
         timeout-minutes: 10
         run: |
           docker run --rm \
@@ -85,7 +85,7 @@ jobs:
         run: |
           mkdir ${{ runner.temp }}/strapi-${{ matrix.version }}-${{ github.run_id }}
         
-      - name: Build Old ${{ matrix.version }} Image and Export to Docker
+      - name: Build Old ${{ matrix.version }} Strapi Image and Export to Docker
         uses: docker/build-push-action@v6
         with:
           load: true
