@@ -14,7 +14,7 @@ jobs:
         version: [v4, v5]
 
     concurrency:
-      group: 'pr-${{ github.head_ref }}-${{ github.sha }}-${{ matrix.version }}'
+      group: 'pr-${{ github.head_ref }}-${{ matrix.version }}'
       cancel-in-progress: true
 
     env:
