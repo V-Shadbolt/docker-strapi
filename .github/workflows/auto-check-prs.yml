@@ -13,6 +13,10 @@ jobs:
       matrix:
         version: [v4, v5]
 
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ matrix.version }}
+      cancel-in-progress: true
+
     env:
       OLD_VERSION: ${{ matrix.version == 'v4' && '4.15.0' || '5.0.0' }}
       POSTGRES_HOST: 172.17.0.1
