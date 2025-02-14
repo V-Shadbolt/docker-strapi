@@ -83,12 +83,12 @@ jobs:
           MYSQL_USER: strapi
           MYSQL_PASSWORD: strapi
           MYSQL_DATABASE: strapi
-        command: ["mysqld", "--mysql-native-password=ON"]
         options: >-
           --health-cmd="mysqladmin ping"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+          --mysql-native-password=ON
         ports:
           - 3306:3306
     
