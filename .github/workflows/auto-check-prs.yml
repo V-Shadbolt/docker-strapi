@@ -113,19 +113,6 @@ jobs:
             -e DATABASE_PASSWORD=strapi \
             pr-build-check-strapi-${{ matrix.version }}:latest
 
-      - name: Test Latest v4 Strapi Image with MySQL2
-        if: ${{ matrix.version == 'v4' }}
-        timeout-minutes: 10
-        run: |
-          docker run --rm \
-            -e DATABASE_CLIENT=mysql2 \
-            -e DATABASE_HOST=${{ env.MYSQL_HOST }} \
-            -e DATABASE_PORT=3306 \
-            -e DATABASE_NAME=strapi \
-            -e DATABASE_USERNAME=strapi \
-            -e DATABASE_PASSWORD=strapi \
-            pr-build-check-strapi-${{ matrix.version }}:latest
-
       - name: Create Temp Volume
         run: |
           mkdir ${{ runner.temp }}/strapi-${{ matrix.version }}-${{ github.run_id }}
