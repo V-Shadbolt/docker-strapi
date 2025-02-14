@@ -1,54 +1,61 @@
-name: Publish Docker Image
+name: Backfill Docker Images
 
 on:
-  push:
-    paths:
-      - 'release-versions/*'
+  workflow_dispatch:
+    inputs:
+      strapi_versions:
+        description: 'Comma-separated list of Strapi versions to backfill (e.g., 4.15.0 or 4.15.0,4.15.1,5.0.0)'
+        required: true
 
 jobs:
+  prepare-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.set-versions.outputs.versions }}
+    steps:
+      - id: set-versions
+        run: |
+          # Convert comma-separated string to JSON array, handling both single and multiple versions
+          VERSIONS=$(echo '${{ inputs.strapi_versions }}' | jq -R -s -c 'split(",") | map(select(length > 0))')
+          echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
+
   tags:
     name: Get Tags
+    needs: [prepare-versions]
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        version: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
 
     outputs:
       tag: ${{ steps.vars.outputs.TAG }}
       latest: ${{ steps.vars.outputs.LATEST }}
 
     steps:
-      - name: Get Current Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get Changed Release Files
-        id: changed-files
-        uses: tj-actions/changed-files@v45
-        with:
-          files: release-versions/**
-
-      - name: Get Tag and Latest
+      - name: Set Tag and Latest
         id: vars
         run: |
-          if echo "${{ steps.changed-files.outputs.modified_files }}" | grep -q 'strapi-v5-latest.txt'; then
-            echo "TAG=$(cat release-versions/strapi-v5-latest.txt)" >> "$GITHUB_OUTPUT"
+          echo "TAG=${{ matrix.version }}" >> "$GITHUB_OUTPUT"
+          if [[ "${{ matrix.version }}" =~ ^5.* ]]; then
             echo "LATEST=latest" >> "$GITHUB_OUTPUT"
           else
-            echo "TAG=$(cat release-versions/strapi-v4-latest.txt)" >> "$GITHUB_OUTPUT"
             echo "LATEST=latest-v4" >> "$GITHUB_OUTPUT"
-          fi  
+          fi
 
   test-image:
     name: Test Debian Image
-    needs: [tags]
+    needs: [prepare-versions]
     runs-on: ubuntu-latest
 
     env:
-      TAG: ${{ needs.tags.outputs.tag }}
+      TAG: ${{ matrix.version }}
       POSTGRES_HOST: 172.17.0.1
       MYSQL_HOST: 172.17.0.1
 
     strategy:
       matrix:
+        version: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
         upgrade-path:
           - version: '4'
             old_version: 4.15.0
@@ -178,15 +185,16 @@ jobs:
 
   build-and-push:
     name: Build and Push Images
-    needs: [tags, test-image]
+    needs: [prepare-versions, tags, test-image]
     runs-on: ubuntu-latest
 
     env:
-      TAG: ${{ needs.tags.outputs.tag }}
+      TAG: ${{ matrix.version }}
       LATEST: ${{ needs.tags.outputs.latest }}
 
     strategy:
       matrix:
+        version: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
         os: [debian, alpine]
         arch:
           - platform: linux/amd64
@@ -226,18 +234,18 @@ jobs:
 
   release:
     name: Release
-    needs: [tags, build-and-push]
+    needs: [prepare-versions, tags, build-and-push]
     runs-on: ubuntu-latest
 
     env:
-      TAG: ${{ needs.tags.outputs.tag }}
+      TAG: ${{ matrix.version }}
 
     permissions:
       contents: write
 
     strategy:
       matrix:
-        version: [v4, v5]
+        version: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
 
     steps:
       - name: Get Current Repository

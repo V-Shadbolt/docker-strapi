@@ -20,6 +20,7 @@ jobs:
     env:
       OLD_VERSION: ${{ matrix.version == 'v4' && '4.15.0' || '5.0.0' }}
       POSTGRES_HOST: 172.17.0.1
+      MYSQL_HOST: 172.17.0.1
 
     services:
       postgres:
@@ -35,6 +36,21 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      mysql:
+        image: bitnami/mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: strapi
+          MYSQL_USER: strapi
+          MYSQL_PASSWORD: strapi
+          MYSQL_DATABASE: strapi
+          MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        ports:
+          - 3306:3306
 
     steps:
       - name: Get Current Repository
@@ -80,6 +96,18 @@ jobs:
             -e DATABASE_CLIENT=postgres \
             -e DATABASE_HOST=${{ env.POSTGRES_HOST }} \
             -e DATABASE_PORT=5432 \
+            -e DATABASE_NAME=strapi \
+            -e DATABASE_USERNAME=strapi \
+            -e DATABASE_PASSWORD=strapi \
+            pr-build-check-strapi-${{ matrix.version }}:latest
+      
+      - name: Test Latest ${{ matrix.version }} Strapi Image with MySQL
+        timeout-minutes: 10
+        run: |
+          docker run --rm \
+            -e DATABASE_CLIENT=mysql \
+            -e DATABASE_HOST=${{ env.MYSQL_HOST }} \
+            -e DATABASE_PORT=3306 \
             -e DATABASE_NAME=strapi \
             -e DATABASE_USERNAME=strapi \
             -e DATABASE_PASSWORD=strapi \

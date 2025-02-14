@@ -221,6 +221,35 @@ EOT
     fi
   fi
 
+  if [ "${DATABASE_CLIENT}" = "mysql" ]; then
+    if [ "${STRAPI_VERSION#5}" != "$STRAPI_VERSION" ]; then
+      if ! grep -q "\"mysql2\"" package.json; then
+        echo "Adding MySQL2 package for Strapi v5..."
+        if [ -f "yarn.lock" ]; then
+          yarn add "mysql2@^3.12.0" --prod || { echo "Adding MySQL2 package failed"; exit 1; }
+        else
+          npm install mysql2@"^3.12.0" --only=prod || { echo "Adding MySQL2 package failed"; exit 1; }
+        fi
+      fi
+    else
+      if ! grep -q "\"mysql\"" package.json; then
+        echo "Adding MySQL package for Strapi v4..."
+        if [ -f "yarn.lock" ]; then
+          yarn add "mysql@^2.18.1" --prod || { echo "Adding MySQL package failed"; exit 1; }
+        else
+          npm install mysql@"^2.18.1" --only=prod || { echo "Adding MySQL package failed"; exit 1; }
+        fi
+      fi
+    fi
+  elif [ "${DATABASE_CLIENT}" = "mysql2" ] && ! grep -q "\"mysql2\"" package.json; then
+    echo "Adding MySQL2 package..."
+    if [ -f "yarn.lock" ]; then
+      yarn add "mysql2@^3.12.0" --prod || { echo "Adding MySQL2 package failed"; exit 1; }
+    else
+      npm install mysql2@"^3.12.0" --only=prod || { echo "Adding MySQL2 package failed"; exit 1; }
+    fi
+  fi
+
   BUILD=${BUILD:-false}
 
   if [ "$BUILD" = "true" ]; then
