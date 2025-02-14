@@ -109,7 +109,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Build Latest v${{ matrix.upgrade-path.version }} Strapi Image and Export to Docker
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         uses: docker/build-push-action@v6
         with:
           load: true
@@ -122,13 +122,13 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
 
       - name: Test Latest v${{ matrix.upgrade-path.version }} Strapi Image with SQLite
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         timeout-minutes: 10
         run: |
           docker run --rm ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
 
       - name: Test Latest v${{ matrix.upgrade-path.version }} Strapi Image with PostgreSQL
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         timeout-minutes: 10
         run: |
           docker run --rm \
@@ -141,7 +141,7 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
       
       - name: Test Latest v${{ matrix.upgrade-path.version }} Strapi Image with MySQL
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         timeout-minutes: 10
         run: |
           docker run --rm \
@@ -154,12 +154,12 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
       
       - name: Create Temp Volume
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         run: |
           mkdir ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}
       
       - name: Build Old v${{ matrix.upgrade-path.version }} Strapi Image and Export to Docker
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         uses: docker/build-push-action@v6
         with:
           load: true
@@ -172,13 +172,13 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:old
 
       - name: Init Old v${{ matrix.upgrade-path.version }} Strapi Image with SQLite
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         timeout-minutes: 10
         run: |
           docker run --rm -v ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:old
         
       - name: Test Upgrade from v${{ matrix.upgrade-path.version }} to Latest Strapi Image with SQLite
-        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
+        if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         timeout-minutes: 10
         run: |
           docker run --rm -v ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}:/srv/app ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
