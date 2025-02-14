@@ -139,7 +139,7 @@ The Docker entrypoint has been modified to add the missing `pg` modules if the S
 
 ### Cannot find module 'mysql'
 
-The Docker entrypoint has been modified to add the missing `pg` modules if the Strapi database is configured to use Postgres starting in `v5.9.0` and `v4.25.20`.
+The Docker entrypoint has been modified to add the missing `pg` modules if the Strapi database is configured to use Postgres starting in `v5.10.2` and `v4.25.20`.
 
 ---
 
