@@ -228,9 +228,8 @@ jobs:
             NODE_VERSION=18
             NODE=${{ matrix.arch.node }}
           push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }}
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }}
+          tags: >-
+            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }},${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }}
 
   release:
     name: Release
