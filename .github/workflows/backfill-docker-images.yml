@@ -12,12 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       versions: ${{ steps.set-versions.outputs.versions }}
+      highest_v4: ${{ steps.set-versions.outputs.highest_v4 }}
+      highest_v5: ${{ steps.set-versions.outputs.highest_v5 }}
     steps:
       - id: set-versions
         run: |
           # Convert comma-separated string to JSON array and clean whitespace
           VERSIONS=$(echo '${{ inputs.strapi_versions }}' | jq -R -s -c 'split(",") | map(select(length > 0) | gsub("^\\s+|\\s+$"; ""))')
+          # Find highest versions for v4 and v5
+          HIGHEST_V4=$(echo $VERSIONS | jq -r 'map(select(startswith("4"))) | sort_by(split(".") | map(tonumber)) | last')
+          HIGHEST_V5=$(echo $VERSIONS | jq -r 'map(select(startswith("5"))) | sort_by(split(".") | map(tonumber)) | last')
           echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
+          echo "highest_v4=${HIGHEST_V4}" >> "$GITHUB_OUTPUT"
+          echo "highest_v5=${HIGHEST_V5}" >> "$GITHUB_OUTPUT"
 
   tags:
     name: Get Tags
@@ -38,9 +45,17 @@ jobs:
         run: |
           echo "TAG=${{ matrix.version }}" >> "$GITHUB_OUTPUT"
           if [[ "${{ matrix.version }}" == 5* ]]; then
-            echo "LATEST=latest" >> "$GITHUB_OUTPUT"
-          else
-            echo "LATEST=latest-v4" >> "$GITHUB_OUTPUT"
+            if [[ "${{ matrix.version }}" == "${{ needs.prepare-versions.outputs.highest_v5 }}" ]]; then
+              echo "LATEST=latest" >> "$GITHUB_OUTPUT"
+            else
+              echo "LATEST=skip-latest" >> "$GITHUB_OUTPUT"
+            fi
+          elif [[ "${{ matrix.version }}" == 4* ]]; then
+            if [[ "${{ matrix.version }}" == "${{ needs.prepare-versions.outputs.highest_v4 }}" ]]; then
+              echo "LATEST=latest-v4" >> "$GITHUB_OUTPUT"
+            else
+              echo "LATEST=skip-latest" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
   test-image:
@@ -230,7 +245,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.TAG }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }}
-            ${{ secrets.DOCKER_USERNAME }}/strapi:${{ env.LATEST }}${{ matrix.os == 'alpine' && '-alpine' || '' }}${{ matrix.arch.platform == 'linux/arm64' && '-arm64' || '' }}
+            ${{ env.LATEST != 'skip-latest' && format('{0}/strapi:{1}{2}{3}', secrets.DOCKER_USERNAME, env.LATEST, matrix.os == 'alpine' && '-alpine' || '', matrix.arch.platform == 'linux/arm64' && '-arm64' || '') || '' }}
 
   release:
     name: Release
