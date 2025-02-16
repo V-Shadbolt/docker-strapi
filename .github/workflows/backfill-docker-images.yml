@@ -26,38 +26,6 @@ jobs:
           echo "highest_v4=${HIGHEST_V4}" >> "$GITHUB_OUTPUT"
           echo "highest_v5=${HIGHEST_V5}" >> "$GITHUB_OUTPUT"
 
-  tags:
-    name: Get Tags
-    needs: [prepare-versions]
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        version: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
-
-    outputs:
-      tag: ${{ steps.vars.outputs.TAG }}
-      latest: ${{ steps.vars.outputs.LATEST }}
-
-    steps:
-      - name: Set Tag and Latest
-        id: vars
-        run: |
-          echo "TAG=${{ matrix.version }}" >> "$GITHUB_OUTPUT"
-          if [[ "${{ matrix.version }}" == 5* ]]; then
-            if [[ "${{ matrix.version }}" == "${{ needs.prepare-versions.outputs.highest_v5 }}" ]]; then
-              echo "LATEST=latest" >> "$GITHUB_OUTPUT"
-            else
-              echo "LATEST=skip-latest" >> "$GITHUB_OUTPUT"
-            fi
-          elif [[ "${{ matrix.version }}" == 4* ]]; then
-            if [[ "${{ matrix.version }}" == "${{ needs.prepare-versions.outputs.highest_v4 }}" ]]; then
-              echo "LATEST=latest-v4" >> "$GITHUB_OUTPUT"
-            else
-              echo "LATEST=skip-latest" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-
   test-image:
     name: Test Debian Image
     needs: [prepare-versions]
@@ -200,12 +168,11 @@ jobs:
 
   build-and-push:
     name: Build and Push Images
-    needs: [prepare-versions, tags, test-image]
+    needs: [prepare-versions, test-image]
     runs-on: ubuntu-latest
 
     env:
       TAG: ${{ matrix.version }}
-      LATEST: ${{ needs.tags.outputs.latest }}
 
     strategy:
       matrix:
@@ -233,6 +200,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}  
 
+      - name: Set LATEST env
+        run: |
+          if [[ "${{ matrix.version }}" == 5* ]]; then
+            if [[ "${{ matrix.version }}" == "${{ needs.prepare-versions.outputs.highest_v5 }}" ]]; then
+              echo "LATEST=latest" >> $GITHUB_ENV
+            else
+              echo "LATEST=skip-latest" >> $GITHUB_ENV
+            fi
+          elif [[ "${{ matrix.version }}" == 4* ]]; then
+            if [[ "${{ matrix.version }}" == "${{ needs.prepare-versions.outputs.highest_v4 }}" ]]; then
+              echo "LATEST=latest-v4" >> $GITHUB_ENV
+            else
+              echo "LATEST=skip-latest" >> $GITHUB_ENV
+            fi
+          fi
+
       - name: Build and Push ${{ matrix.os }} (${{ matrix.arch.platform }})
         uses: docker/build-push-action@v6
         with:
@@ -249,7 +232,7 @@ jobs:
 
   release:
     name: Release
-    needs: [prepare-versions, tags, build-and-push]
+    needs: [prepare-versions, build-and-push]
     runs-on: ubuntu-latest
 
     env:
@@ -267,9 +250,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create Release in GitHub
-        if: |
-          (matrix.version == 'v4' && startsWith(env.TAG, '4')) ||
-          (matrix.version == 'v5' && startsWith(env.TAG, '5'))
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -279,4 +259,4 @@ jobs:
           generate_release_notes: true
           name: Release ${{ env.TAG }}
           body: Strapi v${{ env.TAG }}
-          make_latest: ${{ matrix.version == 'v5' }}
+          make_latest: ${{ matrix.version == needs.prepare-versions.outputs.highest_v5 }}
