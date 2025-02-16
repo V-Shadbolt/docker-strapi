@@ -37,7 +37,7 @@ jobs:
         id: vars
         run: |
           echo "TAG=${{ matrix.version }}" >> "$GITHUB_OUTPUT"
-          if [[ "${{ matrix.version }}" =~ ^5.* ]]; then
+          if [[ "${{ matrix.version }}" == 5* ]]; then
             echo "LATEST=latest" >> "$GITHUB_OUTPUT"
           else
             echo "LATEST=latest-v4" >> "$GITHUB_OUTPUT"
