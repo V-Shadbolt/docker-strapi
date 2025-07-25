@@ -123,6 +123,51 @@ EOT
     fi
   fi
 
+  if [ "$ENABLE_VITE_ALLOWED_HOSTS" = "true" ] && [ ! -f "src/admin/vite.config.js" ] && [ ! -f "src/admin/vite.config.ts" ]; then
+    echo "Creating vite.config with allowedHosts configuration..."
+    mkdir -p src/admin
+    
+    if [ -f "tsconfig.json" ] || [ -f "package.json" ] && grep -q "\"typescript\"" package.json; then
+      echo "Detected TypeScript project, creating vite.config.ts..."
+      cat <<-EOT > 'src/admin/vite.config.ts'
+import { mergeConfig, type UserConfig } from 'vite';
+
+export default (config: UserConfig) => {
+  // Important: always return the modified config
+  return mergeConfig(config, {
+    resolve: {
+      alias: {
+        '@': '/src',
+      },
+    },
+    server: {
+      allowedHosts: true
+    },
+  });
+};
+EOT
+    else
+      echo "Detected JavaScript project, creating vite.config.js..."
+      cat <<-EOT > 'src/admin/vite.config.js'
+const { mergeConfig } = require('vite');
+
+module.exports = (config) => {
+  // Important: always return the modified config
+  return mergeConfig(config, {
+    resolve: {
+      alias: {
+        '@': '/src',
+      },
+    },
+    server: {
+      allowedHosts: true
+    },
+  });
+};
+EOT
+    fi
+  fi
+
   if [ -f "yarn.lock" ]; then
     current_strapi_version="$(yarn list --pattern strapi --depth=0 | grep @strapi/strapi | cut -d @ -f 3)"
   else
