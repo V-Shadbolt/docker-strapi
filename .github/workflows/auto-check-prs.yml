@@ -79,7 +79,7 @@ jobs:
           context: ./images/strapi-debian
           build-args: |
             STRAPI_VERSION=${{steps.fetch-strapi-version.outputs.VERSION}}
-            NODE_VERSION=18
+            NODE_VERSION=20
             NODE=node
             GITHUB_ACTIONS=1
           tags: pr-build-check-strapi-${{ matrix.version }}:latest
@@ -124,7 +124,7 @@ jobs:
           context: ./images/strapi-debian
           build-args: |
             STRAPI_VERSION=${{ env.OLD_VERSION }}
-            NODE_VERSION=18
+            NODE_VERSION=20
             NODE=node
             GITHUB_ACTIONS=1
           tags: pr-build-check-strapi-${{ matrix.version }}:old
