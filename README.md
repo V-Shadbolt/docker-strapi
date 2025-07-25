@@ -80,7 +80,22 @@ Finally, we have a variable for re-building Strapi. After modifying any of the f
 
 - `BUILD: tobemodified`: A boolean for re-building the Strapi project. Ex. true
 
-> Here is a completed example [compose file](./examples/strapi-postgres/docker-compose.yml) for the available environment variables as well as the configuration for a postgres database. You can find more examples [here](https://github.com/V-Shadbolt/docker-strapi/tree/main/examples).
+### Reverse Proxy Support
+
+When running Strapi behind a reverse proxy (like Caddy, Nginx, or Traefik) in development mode (`NODE_ENV=development`), you might encounter the error:
+
+```
+Blocked request. This host ("api.example.com") is not allowed.
+To allow this host, add "api.example.com" to `server.allowedHosts` in vite.config.js.
+```
+
+This happens because Vite (the development server) blocks requests from hosts that aren't explicitly allowed. To fix this, you can use:
+
+- `ENABLE_VITE_ALLOWED_HOSTS: tobemodified`: A boolean to enable Vite allowed hosts fix. Ex. `true`
+
+When set to `true`, this will automatically create a `vite.config.js` file that allows all hosts, resolving the reverse proxy issue.
+
+> Here is a completed example [compose file](./examples/strapi-postgres/docker-compose.yml) for the available environment variables as well as the configuration for a postgres database. You can find more examples [here](https://github.com/V-Shadbolt/docker-strapi/tree/main/examples), including a [reverse proxy example](./examples/strapi-reverse-proxy/docker-compose.yml).
 
 - The official documentation for Strapi and these files is linked below.
 

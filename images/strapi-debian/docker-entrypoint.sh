@@ -123,6 +123,28 @@ EOT
     fi
   fi
 
+  if [ "$ENABLE_VITE_ALLOWED_HOSTS" = "true" ] && [ ! -f "src/admin/vite.config.js" ]; then
+    echo "Creating vite.config.js with allowedHosts configuration..."
+    mkdir -p src/admin
+    cat <<-EOT > 'src/admin/vite.config.js'
+const { mergeConfig } = require('vite');
+
+module.exports = (config) => {
+  // Important: always return the modified config
+  return mergeConfig(config, {
+    resolve: {
+      alias: {
+        '@': '/src',
+      },
+    },
+    server: {
+      allowedHosts: true
+    },
+  });
+};
+EOT
+  fi
+
   if [ -f "yarn.lock" ]; then
     current_strapi_version="$(yarn list --pattern strapi --depth=0 | grep @strapi/strapi | cut -d @ -f 3)"
   else
