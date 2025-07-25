@@ -123,12 +123,10 @@ EOT
     fi
   fi
 
-  # Create vite.config.js for existing projects if ENABLE_VITE_ALLOWED_HOSTS is set to true
   if [ "$ENABLE_VITE_ALLOWED_HOSTS" = "true" ] && [ ! -f "src/admin/vite.config.js" ] && [ ! -f "src/admin/vite.config.ts" ]; then
     echo "Creating vite.config with allowedHosts configuration..."
     mkdir -p src/admin
-    
-    # Determine if project uses TypeScript
+
     if [ -f "tsconfig.json" ] || [ -f "package.json" ] && grep -q "\"typescript\"" package.json; then
       echo "Detected TypeScript project, creating vite.config.ts..."
       cat <<-EOT > 'src/admin/vite.config.ts'
