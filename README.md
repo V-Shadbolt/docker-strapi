@@ -93,9 +93,9 @@ This happens because Vite (the development server) blocks requests from hosts th
 
 - `ENABLE_VITE_ALLOWED_HOSTS: tobemodified`: A boolean to enable Vite allowed hosts fix. Ex. `true`
 
-When set to `true`, this will automatically create a `vite.config.js` file that allows all hosts, resolving the reverse proxy issue.
+When set to `true`, this will automatically create a `vite.config.js` (for JavaScript projects) or `vite.config.ts` (for TypeScript projects) file that allows all hosts, resolving the reverse proxy issue. The script automatically detects the project type and creates the appropriate configuration file.
 
-> Here is a completed example [compose file](./examples/strapi-postgres/docker-compose.yml) for the available environment variables as well as the configuration for a postgres database. You can find more examples [here](https://github.com/V-Shadbolt/docker-strapi/tree/main/examples), including a [reverse proxy example](./examples/strapi-reverse-proxy/docker-compose.yml).
+> Here is a completed example [compose file](./examples/strapi-postgres/docker-compose.yml) for the available environment variables as well as the configuration for a postgres database. You can find more examples [here](https://github.com/V-Shadbolt/docker-strapi/tree/main/examples).
 
 - The official documentation for Strapi and these files is linked below.
 
@@ -154,7 +154,7 @@ The Docker entrypoint has been modified to add the missing `pg` modules if the S
 
 ### Cannot find module 'mysql'
 
-The Docker entrypoint has been modified to add the missing `pg` modules if the Strapi database is configured to use Postgres starting in `v5.10.2` and `v4.25.20`.
+The Docker entrypoint has been modified to add the missing `mysql` modules if the Strapi database is configured to use MySQL starting in `v5.10.2` and `v4.25.20`.
 
 ---
 
