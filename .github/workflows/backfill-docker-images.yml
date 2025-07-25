@@ -99,7 +99,7 @@ jobs:
           context: ./images/strapi-debian
           build-args: |
             STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=18
+            NODE_VERSION=20
             NODE=node
             GITHUB_ACTIONS=1
           tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
@@ -149,7 +149,7 @@ jobs:
           context: ./images/strapi-debian
           build-args: |
             STRAPI_VERSION=${{ matrix.upgrade-path.old_version }}
-            NODE_VERSION=18
+            NODE_VERSION=20
             NODE=node
             GITHUB_ACTIONS=1
           tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:old
@@ -223,7 +223,7 @@ jobs:
           platforms: ${{ matrix.arch.platform }}
           build-args: |
             STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=18
+            NODE_VERSION=20
             NODE=${{ matrix.arch.node }}
           push: true
           tags: |
