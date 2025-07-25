@@ -130,9 +130,9 @@ EOT
     if [ -f "tsconfig.json" ] || [ -f "package.json" ] && grep -q "\"typescript\"" package.json; then
       echo "Detected TypeScript project, creating vite.config.ts..."
       cat <<-EOT > 'src/admin/vite.config.ts'
-import { mergeConfig } from 'vite';
+import { mergeConfig, type UserConfig } from 'vite';
 
-export default (config: any) => {
+export default (config: UserConfig) => {
   // Important: always return the modified config
   return mergeConfig(config, {
     resolve: {
