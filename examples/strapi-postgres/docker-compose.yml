@@ -12,6 +12,7 @@ services:
       PUBLIC_URL: tobemodified #ex. https://api.example.com
       IMG_ORIGIN: "toBeModified1,toBeModified2" #ex. 'self',data:,blob:,api.example.com,market-assets.strapi.io
       CORS_ORIGIN: "toBeModified1,toBeModified2" #ex. https://mywebsite.example.com,https://api.example.com
+      ENABLE_VITE_ALLOWED_HOSTS: false # Set to true to fix "Blocked request. This host is not allowed" error when using reverse proxy
       DATABASE_CLIENT: postgres
       DATABASE_HOST: strapiDB
       DATABASE_PORT: 5432
