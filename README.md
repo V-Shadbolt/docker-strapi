@@ -80,6 +80,21 @@ Finally, we have a variable for re-building Strapi. After modifying any of the f
 
 - `BUILD: tobemodified`: A boolean for re-building the Strapi project. Ex. true
 
+### Reverse Proxy Support
+
+When running Strapi behind a reverse proxy (like Caddy, Nginx, or Traefik) in development mode (`NODE_ENV=development`), you might encounter the error:
+
+```
+Blocked request. This host ("api.example.com") is not allowed.
+To allow this host, add "api.example.com" to `server.allowedHosts` in vite.config.js.
+```
+
+This happens because Vite (the development server) blocks requests from hosts that aren't explicitly allowed. To fix this, you can use:
+
+- `ENABLE_VITE_ALLOWED_HOSTS: tobemodified`: A boolean to enable Vite allowed hosts fix. Ex. `true`
+
+When set to `true`, this will automatically create a `vite.config.js` (for JavaScript projects) or `vite.config.ts` (for TypeScript projects) file that allows all hosts, resolving the reverse proxy issue. The script automatically detects the project type and creates the appropriate configuration file.
+
 > Here is a completed example [compose file](./examples/strapi-postgres/docker-compose.yml) for the available environment variables as well as the configuration for a postgres database. You can find more examples [here](https://github.com/V-Shadbolt/docker-strapi/tree/main/examples).
 
 - The official documentation for Strapi and these files is linked below.
@@ -139,7 +154,7 @@ The Docker entrypoint has been modified to add the missing `pg` modules if the S
 
 ### Cannot find module 'mysql'
 
-The Docker entrypoint has been modified to add the missing `pg` modules if the Strapi database is configured to use Postgres starting in `v5.10.2` and `v4.25.20`.
+The Docker entrypoint has been modified to add the missing `mysql` modules if the Strapi database is configured to use MySQL starting in `v5.10.2` and `v4.25.20`.
 
 ---
 
