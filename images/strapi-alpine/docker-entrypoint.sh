@@ -13,7 +13,7 @@ if [ "$*" = "strapi" ]; then
     echo "No project found at /srv/app. Creating a new strapi project ..."
 
     if [ "${STRAPI_VERSION#5}" != "$STRAPI_VERSION" ]; then
-      DOCKER=true npx create-strapi-app@${STRAPI_VERSION} . --no-run \
+      DOCKER=true printf "n\n" | npx create-strapi-app@${STRAPI_VERSION} . --no-run \
         --js \
         --install \
         --no-git-init \
