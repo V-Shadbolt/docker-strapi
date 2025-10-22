@@ -37,7 +37,7 @@ jobs:
         ports:
           - 5432:5432
       mysql:
-        image: bitnami/mysql:8.0
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: strapi
           MYSQL_USER: strapi
