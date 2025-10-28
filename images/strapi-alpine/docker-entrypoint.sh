@@ -21,7 +21,7 @@ if [ "$*" = "strapi" ]; then
         --skip-cloud \
         --skip-db \
         $EXTRA_ARGS
-    elif [ "${STRAPI_VERSION#4.25}" != "$STRAPI_VERSION" ]; then
+    elif [ "${STRAPI_VERSION%%.*}" = "4" ] && [ "$(echo "$STRAPI_VERSION" | cut -d. -f2)" -ge 25 ]; then
       DOCKER=true npx create-strapi-app@${STRAPI_VERSION} . --no-run \
         --skip-cloud \
         --dbclient=$DATABASE_CLIENT \
