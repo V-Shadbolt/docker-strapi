@@ -40,10 +40,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: strapi
-          MYSQL_USER: strapi
-          MYSQL_PASSWORD: strapi
           MYSQL_DATABASE: strapi
-          MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password
         options: >-
           --health-cmd="mysqladmin ping"
           --health-interval=10s
@@ -53,6 +50,11 @@ jobs:
           - 3306:3306
 
     steps:
+      - name: Configure MySQL User with Native Password
+        run: |
+          sleep 5
+          docker exec $(docker ps -qf "ancestor=mysql:8.0") mysql -uroot -pstrapi -e "CREATE USER 'strapi'@'%' IDENTIFIED WITH mysql_native_password BY 'strapi'; GRANT ALL PRIVILEGES ON strapi.* TO 'strapi'@'%'; FLUSH PRIVILEGES;"
+
       - name: Get Current Repository
         uses: actions/checkout@v4
 
