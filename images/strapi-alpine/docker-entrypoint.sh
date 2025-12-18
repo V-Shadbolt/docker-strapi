@@ -208,6 +208,7 @@ EOT
       
       # See: https://github.com/strapi/strapi/issues/24888
       npm config set registry https://registry.npmjs.org/
+      echo "registry=https://registry.npmjs.org/" > .npmrc
       
       echo "Performing pre-upgrade patch updates..."
       npx @strapi/upgrade@${STRAPI_VERSION} patch -y || echo "Pre-upgrade patch update failed or not needed. Check the logs. Continuing..."
