@@ -205,6 +205,10 @@ EOT
     if [ "$image_major" -gt "$current_major" ]; then
       echo "Major upgrade needed: v${current_strapi_version} to v${image_major}.${image_minor}.${image_patch}. Upgrading..."
       echo "Ensuring the current version of Strapi is on the latest minor and patch before major upgrade..."
+      
+      # Ensure npm registry is set (required for @strapi/upgrade to resolve package URLs)
+      export NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}"
+      
       echo "Performing pre-upgrade patch updates..."
       npx @strapi/upgrade@${STRAPI_VERSION} patch -y || echo "Pre-upgrade patch update failed or not needed. Check the logs. Continuing..."
       echo "Performing pre-upgrade minor updates..."
