@@ -360,6 +360,11 @@ EOT
       fi
 
     done
+
+    exec 3<&-
+    echo -e "\nStrapi exited before launching. Exiting container with code 1..."
+    rm -f pipe
+    exit 1
   else
     if [ -f "yarn.lock" ]; then
       exec yarn "${STRAPI_MODE:-develop}"

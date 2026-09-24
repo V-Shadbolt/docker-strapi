@@ -16,6 +16,10 @@ ARG GITHUB_ACTIONS=0
 
 ENV GITHUB_ACTIONS=$GITHUB_ACTIONS
 
+# Strapi >=5.51 pulls in deps requiring node >=22.13 while v4 projects pin node <=20.x.
+# Yarn v1 treats engine mismatches as fatal (npm only warns), which breaks v4 -> v5 upgrades.
+ENV YARN_IGNORE_ENGINES=true
+
 WORKDIR /srv/app
 
 VOLUME /srv/app
