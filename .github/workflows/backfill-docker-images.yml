@@ -81,6 +81,15 @@ jobs:
       - name: Get Current Repository
         uses: actions/checkout@v4
 
+      # Strapi >=5.51 depends on packages requiring node >=22.13. Older versions stay on 20.
+      - name: Set NODE_VERSION env
+        run: |
+          if [ "$(printf '%s\n' 5.51.0 "${{ matrix.version }}" | sort -V | head -n1)" = "5.51.0" ]; then
+            echo "NODE_VERSION=22" >> $GITHUB_ENV
+          else
+            echo "NODE_VERSION=20" >> $GITHUB_ENV
+          fi
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -92,7 +101,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
+
       - name: Build Latest v${{ matrix.upgrade-path.version }} Strapi Image and Export to Docker
         if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         uses: docker/build-push-action@v6
@@ -101,7 +110,7 @@ jobs:
           context: ./images/strapi-debian
           build-args: |
             STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=20
+            NODE_VERSION=${{ env.NODE_VERSION }}
             NODE=node
             GITHUB_ACTIONS=1
           tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
@@ -143,6 +152,7 @@ jobs:
         run: |
           mkdir ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}
       
+      # Old images stay on Node 20 to match what existing users were running before upgrading
       - name: Build Old v${{ matrix.upgrade-path.version }} Strapi Image and Export to Docker
         if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(matrix.version, '5')) }}
         uses: docker/build-push-action@v6
@@ -218,6 +228,15 @@ jobs:
             fi
           fi
 
+      # Strapi >=5.51 depends on packages requiring node >=22.13. Older versions stay on 20.
+      - name: Set NODE_VERSION env
+        run: |
+          if [ "$(printf '%s\n' 5.51.0 "${{ matrix.version }}" | sort -V | head -n1)" = "5.51.0" ]; then
+            echo "NODE_VERSION=22" >> $GITHUB_ENV
+          else
+            echo "NODE_VERSION=20" >> $GITHUB_ENV
+          fi
+
       - name: Build and Push ${{ matrix.os }} (${{ matrix.arch.platform }})
         uses: docker/build-push-action@v6
         with:
@@ -225,7 +244,7 @@ jobs:
           platforms: ${{ matrix.arch.platform }}
           build-args: |
             STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=20
+            NODE_VERSION=${{ env.NODE_VERSION }}
             NODE=${{ matrix.arch.node }}
           push: true
           tags: |

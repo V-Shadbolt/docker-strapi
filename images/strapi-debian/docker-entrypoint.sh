@@ -296,6 +296,12 @@ EOT
     fi
   fi
 
+  # Runs after upgrades so an outdated better-sqlite3 is replaced before any rebuild is attempted
+  if [ -d "node_modules/better-sqlite3" ] && ! node -e "new (require('better-sqlite3'))(':memory:')" >/dev/null 2>&1; then
+    echo "better-sqlite3 was built for a different Node.js version. Rebuilding ..."
+    npm rebuild better-sqlite3 || { echo "Rebuilding better-sqlite3 failed"; exit 1; }
+  fi
+
   BUILD=${BUILD:-false}
 
   if [ "$BUILD" = "true" ]; then
@@ -360,6 +366,11 @@ EOT
       fi
 
     done
+
+    exec 3<&-
+    echo -e "\nStrapi exited before launching. Exiting container with code 1..."
+    rm -f pipe
+    exit 1
   else
     if [ -f "yarn.lock" ]; then
       exec yarn "${STRAPI_MODE:-develop}"

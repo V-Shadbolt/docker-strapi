@@ -13,6 +13,7 @@ jobs:
     outputs:
       tag: ${{ steps.vars.outputs.TAG }}
       latest: ${{ steps.vars.outputs.LATEST }}
+      node_version: ${{ steps.node.outputs.NODE_VERSION }}
 
     steps:
       - name: Get Current Repository
@@ -35,7 +36,18 @@ jobs:
           else
             echo "TAG=$(cat release-versions/strapi-v4-latest.txt)" >> "$GITHUB_OUTPUT"
             echo "LATEST=latest-v4" >> "$GITHUB_OUTPUT"
-          fi  
+          fi
+
+      # Strapi >=5.51 depends on packages requiring node >=22.13. Older versions stay on 20.
+      - name: Get Node Version
+        id: node
+        run: |
+          TAG="${{ steps.vars.outputs.TAG }}"
+          if [ "$(printf '%s\n' 5.51.0 "$TAG" | sort -V | head -n1)" = "5.51.0" ]; then
+            echo "NODE_VERSION=22" >> "$GITHUB_OUTPUT"
+          else
+            echo "NODE_VERSION=20" >> "$GITHUB_OUTPUT"
+          fi
 
   test-image:
     name: Test Debian Image
@@ -111,7 +123,7 @@ jobs:
           context: ./images/strapi-debian
           build-args: |
             STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=20
+            NODE_VERSION=${{ needs.tags.outputs.node_version }}
             NODE=node
             GITHUB_ACTIONS=1
           tags: ${{ secrets.DOCKER_USERNAME }}/strapi-${{ matrix.upgrade-path.version }}:latest
@@ -153,6 +165,7 @@ jobs:
         run: |
           mkdir ${{ runner.temp }}/strapi-${{ matrix.upgrade-path.version }}-${{ github.run_id }}
       
+      # Old images stay on Node 20 to match what existing users were running before upgrading
       - name: Build Old v${{ matrix.upgrade-path.version }} Strapi Image and Export to Docker
         if: ${{ matrix.upgrade-path.version == '4' || (matrix.upgrade-path.version == '5' && startsWith(needs.tags.outputs.tag, '5')) }}
         uses: docker/build-push-action@v6
@@ -219,7 +232,7 @@ jobs:
           platforms: ${{ matrix.arch.platform }}
           build-args: |
             STRAPI_VERSION=${{ env.TAG }}
-            NODE_VERSION=20
+            NODE_VERSION=${{ needs.tags.outputs.node_version }}
             NODE=${{ matrix.arch.node }}
           push: true
           tags: |
