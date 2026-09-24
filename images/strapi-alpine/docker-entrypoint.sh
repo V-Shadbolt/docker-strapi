@@ -123,6 +123,11 @@ EOT
     fi
   fi
 
+  if [ -d "node_modules/better-sqlite3" ] && ! node -e "new (require('better-sqlite3'))(':memory:')" >/dev/null 2>&1; then
+    echo "better-sqlite3 was built for a different Node.js version. Rebuilding ..."
+    npm rebuild better-sqlite3 || { echo "Rebuilding better-sqlite3 failed"; exit 1; }
+  fi
+
   if [ "$ENABLE_VITE_ALLOWED_HOSTS" = "true" ] && [ ! -f "src/admin/vite.config.js" ] && [ ! -f "src/admin/vite.config.ts" ]; then
     echo "Creating vite.config with allowedHosts configuration..."
     mkdir -p src/admin

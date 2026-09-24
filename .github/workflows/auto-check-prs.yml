@@ -58,9 +58,17 @@ jobs:
       - name: Get Current Repository
         uses: actions/checkout@v4
 
+      # Strapi >=5.51 depends on packages requiring node >=22.13. Older versions stay on 20.
       - name: Read Current Strapi Version
         id: fetch-strapi-version
-        run: echo "VERSION=$(cat release-versions/strapi-${{ matrix.version }}-latest.txt)" >> $GITHUB_OUTPUT
+        run: |
+          VERSION="$(cat release-versions/strapi-${{ matrix.version }}-latest.txt)"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          if [ "$(printf '%s\n' 5.51.0 "$VERSION" | sort -V | head -n1)" = "5.51.0" ]; then
+            echo "NODE_VERSION=22" >> $GITHUB_OUTPUT
+          else
+            echo "NODE_VERSION=20" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -81,7 +89,7 @@ jobs:
           context: ./images/strapi-debian
           build-args: |
             STRAPI_VERSION=${{steps.fetch-strapi-version.outputs.VERSION}}
-            NODE_VERSION=20
+            NODE_VERSION=${{ steps.fetch-strapi-version.outputs.NODE_VERSION }}
             NODE=node
             GITHUB_ACTIONS=1
           tags: pr-build-check-strapi-${{ matrix.version }}:latest
@@ -119,6 +127,7 @@ jobs:
         run: |
           mkdir ${{ runner.temp }}/strapi-${{ matrix.version }}-${{ github.run_id }}
         
+      # Old images stay on Node 20 to match what existing users were running before upgrading
       - name: Build Old ${{ matrix.version }} Strapi Image and Export to Docker
         uses: docker/build-push-action@v6
         with:
